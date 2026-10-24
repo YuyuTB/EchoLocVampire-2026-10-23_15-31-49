@@ -3020,7 +3020,7 @@
     "m_StageCapability": 3,
     "m_CustomBinding": "",
     "m_Value": {
-        "x": 2.0,
+        "x": 5.0,
         "y": 0.0,
         "z": 0.0,
         "w": 0.0
@@ -4024,8 +4024,8 @@
         "m_Expanded": true,
         "m_Position": {
             "serializedVersion": "2",
-            "x": 2524.0,
-            "y": 343.20001220703125,
+            "x": 2524.80029296875,
+            "y": 343.2000427246094,
             "width": 133.599853515625,
             "height": 33.600006103515625
         }
@@ -4532,10 +4532,10 @@
     "promotedFromAssetID": "",
     "promotedFromCategoryName": "",
     "promotedOrdering": -1,
-    "m_Name": "_IsVampire",
+    "m_Name": "_IsEntity",
     "m_DefaultRefNameVersion": 1,
-    "m_RefNameGeneratedByDisplayName": "_IsVampire",
-    "m_DefaultReferenceName": "_IsVampire",
+    "m_RefNameGeneratedByDisplayName": "_IsEntity",
+    "m_DefaultReferenceName": "_IsEntity",
     "m_OverrideReferenceName": "",
     "m_GeneratePropertyBlock": true,
     "m_UseCustomSlotLabel": false,
@@ -5584,7 +5584,7 @@
     "m_Type": "UnityEditor.ShaderGraph.BooleanMaterialSlot",
     "m_ObjectId": "7ce8abab017c49ba96f62d7d312f64be",
     "m_Id": 0,
-    "m_DisplayName": "_IsVampire",
+    "m_DisplayName": "_IsEntity",
     "m_SlotType": 1,
     "m_Hidden": false,
     "m_HideConnector": false,
@@ -5882,7 +5882,7 @@
     "m_StageCapability": 3,
     "m_CustomBinding": "",
     "m_Value": {
-        "x": 15.0,
+        "x": 2.0,
         "y": 1.0,
         "z": 1.0,
         "w": 1.0

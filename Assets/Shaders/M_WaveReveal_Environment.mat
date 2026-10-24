@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_WaveReveal_Test
+  m_Name: M_WaveReveal_Environment
   m_Shader: {fileID: -6465566751694194690, guid: 29e35935b6a930a42805b3a15e67246f, type: 3}
   m_Parent: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
   m_ModifiedSerializedProperties: 0
@@ -26,6 +26,7 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
+    - _IsEntity: 0
     - _IsVampire: 0
     m_Colors: []
   m_BuildTextureStacks: []

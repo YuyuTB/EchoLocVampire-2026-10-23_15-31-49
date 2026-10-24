@@ -11,11 +11,14 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float speed = 5f;
     [SerializeField] private float sprintSpeedMultiplier = 2f;
     [SerializeField] private float jumpSpeed = 5f;
-    [SerializeField] private float lookSensitivity = 1f;
+    [SerializeField] private float lookSensitivity = 0.1f;
     [SerializeField] private float crouchSpeedMultiplier = 0.5f;
     [SerializeField] private float crouchHeight = 1f;
     [SerializeField] private float crouchSwitchSpeed = 35f;
     [SerializeField] private float crouchJumpMultiplier = 0.5f;
+
+    [Header("Interaction Settings")]
+    [SerializeField] private float interactionDistance = 3f;
 
     [Header("Component Declarations")]
     private CharacterController _controller;
@@ -29,6 +32,7 @@ public class PlayerController : MonoBehaviour
     private InputAction _crouchAction;
     private InputAction _attackAction;
     private InputAction _menuAction;
+    private InputAction _interactAction;
 
     [Header("Movement Declarations")]
     private Vector2 _moveAmount;
@@ -64,7 +68,22 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        return; // We don't want to handle movement in Update, we want to handle it in FixedUpdate for physics consistency
+        // Inputs, mouse look, and instant triggers (like interaction) 
+        // run in Update for perfect responsiveness.
+        HandleInput();
+        HandleInteract();
+        HandleLookVertical();
+        HandleLookHorizontal();
+        HandleCursorDisplay();
+    }
+
+    private void FixedUpdate()
+    {
+        // Physics, movement, and crouching stay in FixedUpdate
+        HandleCrouch();
+        HandleMoveSpeed();
+        HandleMove();
+        HandleJumpAndGravity();
     }
 
     private void InitializeComponents()
@@ -83,23 +102,24 @@ public class PlayerController : MonoBehaviour
         _crouchAction = InputSystem.actions.FindAction("Crouch");
         _attackAction = InputSystem.actions.FindAction("Attack");
         _menuAction = InputSystem.actions.FindAction("Menu");
+        _interactAction = InputSystem.actions.FindAction("Interact");
     }
 
-    private void FixedUpdate()
+    private void HandleInteract()
     {
-        InvokeHandlersInUpdate();
-    }
-
-    private void InvokeHandlersInUpdate()
-    {
-        HandleInput();
-        HandleCrouch();
-        HandleMoveSpeed();
-        HandleMove();
-        HandleLookVertical();
-        HandleLookHorizontal();
-        HandleJumpAndGravity();
-        HandleCursorDisplay();
+        if (_interactAction.WasPressedThisFrame())
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(_camera.transform.position, _camera.transform.forward, out hit, interactionDistance))
+            {
+                // Modular approach: Check if the hit object implements IInteractable
+                IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+                if (interactable != null)
+                {
+                    interactable.Interact();
+                }
+            }
+        }
     }
 
     private void HandleInput()
@@ -124,7 +144,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleCrouch()
     {
-        float crouchSpeedOverTime = crouchSwitchSpeed * Time.deltaTime;
+        float crouchSpeedOverTime = crouchSwitchSpeed * Time.fixedDeltaTime;
         if (_crouchAction.IsPressed() && _controller.height > crouchHeight)
         {
             ApplyHeightLerpForCrouch(crouchHeight, crouchSpeedOverTime);
@@ -164,7 +184,7 @@ public class PlayerController : MonoBehaviour
         Vector3 moveDirection = (forward * _moveAmount.y) + (right * _moveAmount.x);
         Vector3 finalMove = (moveDirection * _moveSpeed) + new Vector3(0, _verticalVelocity, 0);
 
-        _controller.Move(finalMove * Time.deltaTime);
+        _controller.Move(finalMove * Time.fixedDeltaTime);
     }
 
     private void HandleLookVertical()
@@ -183,17 +203,18 @@ public class PlayerController : MonoBehaviour
         transform.Rotate(Vector3.up * lookX);
     }
 
+    /********************************************************
+     * JUMP & GRAVITY
+     ********************************************************/
     private void HandleJumpAndGravity()
     {
         if (_controller.isGrounded)
         {
-            // If we touch the ground, we stop the fall (we set a small negative value so that isGrounded remains stable)
             if (_verticalVelocity < 0.0f)
             {
                 _verticalVelocity = -2f;
             }
 
-            // If we press jump, we give a positive impulse to our velocity
             if (_jumpAction.WasPressedThisFrame())
             {
                 _verticalVelocity = jumpSpeed * (_crouchAction.IsPressed() ? crouchJumpMultiplier : 1f);
@@ -201,8 +222,7 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            // If we are in the air, gravity accumulates (acceleration downwards)
-            _verticalVelocity += gravity * Time.deltaTime;
+            _verticalVelocity += gravity * Time.fixedDeltaTime;
         }
     }
 
@@ -211,7 +231,8 @@ public class PlayerController : MonoBehaviour
         _moveSpeed = speed * multiplier;
     }
 
-    private void ApplyHeightLerpForCrouch(float height, float crouchSpeedOverTime) {
+    private void ApplyHeightLerpForCrouch(float height, float crouchSpeedOverTime)
+    {
         _controller.height = Mathf.Lerp(_controller.height, height, crouchSpeedOverTime);
     }
 }
