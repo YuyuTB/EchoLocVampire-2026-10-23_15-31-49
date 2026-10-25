@@ -71,7 +71,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -109,14 +109,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
   InputActions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   gravity: -9.81
-  speed: 5
+  speed: 3
   sprintSpeedMultiplier: 2
   jumpSpeed: 5
-  lookSensitivity: 1
+  lookSensitivity: 0.1
   crouchSpeedMultiplier: 0.5
   crouchHeight: 1
   crouchSwitchSpeed: 35
   crouchJumpMultiplier: 0.5
+  interactionDistance: 3
+  hasExitKey: 0
 --- !u!143 &8452321315365629765
 CharacterController:
   m_ObjectHideFlags: 0
@@ -384,6 +386,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 817298890103055763}
     m_Modifications:
+    - target: {fileID: -8894861099999042563, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
     - target: {fileID: -8679921383154817045, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
       propertyPath: m_LocalScale.x
       value: 0.0012
@@ -436,10 +442,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -4747468401769818965, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
+    - target: {fileID: -3746409911931881383, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
+    - target: {fileID: -2902881335777260577, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
+    - target: {fileID: -2112896479910631057, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
     - target: {fileID: 919132149155446097, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
       propertyPath: m_Name
       value: cane
       objectReference: {fileID: 0}
+    - target: {fileID: 1900544030949220821, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
+    - target: {fileID: 6692038886110184796, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: -8700617353114198275, guid: 579aeef1e6fb23143acb68bf08a97287, type: 3}
@@ -517,6 +547,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: hand
       objectReference: {fileID: 0}
+    - target: {fileID: 6431251673201816453, guid: be092cd1d61cfa245b97ce7920b0b6bd, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 7729527b024829640bb9e321f8140c7e, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
