@@ -19,6 +19,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Interaction Settings")]
     [SerializeField] private float interactionDistance = 3f;
+    public bool hasExitKey = false;
 
     [Header("Component Declarations")]
     private CharacterController _controller;
@@ -116,7 +117,7 @@ public class PlayerController : MonoBehaviour
                 IInteractable interactable = hit.collider.GetComponent<IInteractable>();
                 if (interactable != null)
                 {
-                    interactable.Interact();
+                    interactable.Interact(this);
                 }
             }
         }
@@ -192,7 +193,7 @@ public class PlayerController : MonoBehaviour
         float lookY = _lookAmount.y * lookSensitivity;
 
         _verticalRotation -= lookY;
-        _verticalRotation = Mathf.Clamp(_verticalRotation, -70f, 30f);
+        _verticalRotation = Mathf.Clamp(_verticalRotation, -70f, 70f);
         _camera.transform.localRotation = Quaternion.Euler(_verticalRotation, 0f, 0f);
     }
 

@@ -19,11 +19,19 @@ public class DoorController : MonoBehaviour, IInteractable
     }
 
     // Required method from the IInteractable interface
-    public void Interact()
+    public void Interact(PlayerController player)
     {
-        if (isLocked && canBeUnlocked)
+        if (isLocked && canBeUnlocked && player.hasExitKey)
         {
             UnlockDoor();
+        }
+        else if (isLocked && !player.hasExitKey)
+        {
+            Debug.Log("La porte est verrouillée. Vous avez besoin d'une clé pour l'ouvrir.");
+        }
+        else if (isLocked && !canBeUnlocked)
+        {
+            Debug.Log("La porte est verrouillée et ne peut pas être déverrouillée.");
         }
         else
         {
