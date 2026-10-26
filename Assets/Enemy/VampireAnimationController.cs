@@ -4,16 +4,21 @@ using UnityEngine.AI;
 [RequireComponent(typeof(NavMeshAgent))]
 public class VampireAnimationController : MonoBehaviour
 {
-    public enum AIState { Idle, Patrol, Chase }
+    public enum AIState { SpawnWait, Idle, Patrol, Investigate, Chase }
 
     [Header("Composants")]
     private Animator animator;
     private NavMeshAgent agent;
     private Transform playerTransform;
+    private AudioSource audioSource;
+
+    [Header("Paramètres de Spawn")]
+    [SerializeField] private float spawnWaitTime = 5f; // Durée de l'attente au spawn
+    private float spawnTimer = 0f;
 
     [Header("Champs de Détection Visuelle")]
-    [SerializeField] private float viewRadius = 8f;
-    [SerializeField] private float viewAngle = 50f;
+    [SerializeField] private float viewRadius = 10f;
+    [SerializeField] private float viewAngle = 60f;
     [SerializeField] private LayerMask obstacleMask;
     [SerializeField] private LayerMask playerMask;
 
@@ -21,18 +26,24 @@ public class VampireAnimationController : MonoBehaviour
     [SerializeField] private float hearingRadius = 20f;
     [SerializeField] private float noiseThreshold = 0.5f;
 
-    [Header("Patrouille Aléatoire")]
-    [SerializeField] private float minPatrolDistance = 6f;
-    [SerializeField] private float maxPatrolDistance = 15f;
-    [SerializeField] private float minWaitTime = 3f;
-    [SerializeField] private float maxWaitTime = 6f;
+    [Header("Patrouille Globale (NavMesh)")]
+    [SerializeField] private float minPatrolDistance = 10f;
+    [SerializeField] private float maxPatrolDistance = 35f;
+    [SerializeField] private float minWaitTime = 2f;
+    [SerializeField] private float maxWaitTime = 5f;
 
     [Header("Vitesses de Déplacement")]
     [SerializeField] private float walkSpeed = 1.5f;
+    [SerializeField] private float investigateSpeed = 2.5f;
     [SerializeField] private float chaseSpeed = 4.5f;
 
+    [Header("Paramètres de Chasse & Perte de Vue")]
+    [SerializeField] private float loseSightTimerMax = 3.0f;
+    private float currentLoseSightTimer = 0f;
+    private Vector3 lastKnownPlayerPosition;
+
     // État actuel
-    private AIState currentState = AIState.Idle;
+    private AIState currentState = AIState.SpawnWait;
     private float waitTimer = 0f;
     private float stuckCheckTimer = 0f;
 
@@ -40,6 +51,7 @@ public class VampireAnimationController : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     private void Start()
@@ -52,15 +64,30 @@ public class VampireAnimationController : MonoBehaviour
 
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            agent.speed = walkSpeed;
-            // Démarrage directement en sélection de patrouille
-            GoToNextPatrolPoint();
+            // S'assure qu'il est bien arrêté pendant le délai de spawn
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+            spawnTimer = spawnWaitTime;
+            currentState = AIState.SpawnWait;
         }
     }
 
     private void Update()
     {
         if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
+
+        // Gestion de l'état d'attente au spawn (ne fait rien d'autre pendant 5 secondes)
+        if (currentState == AIState.SpawnWait)
+        {
+            spawnTimer -= Time.deltaTime;
+            if (spawnTimer <= 0f)
+            {
+                GoToNextPatrolPoint();
+            }
+            UpdateAnimator();
+            HandlePlayWalkingSound();
+            return;
+        }
 
         LookForPlayer();
 
@@ -72,12 +99,35 @@ public class VampireAnimationController : MonoBehaviour
             case AIState.Patrol:
                 HandlePatrolState();
                 break;
+            case AIState.Investigate:
+                HandleInvestigateState();
+                break;
             case AIState.Chase:
                 HandleChaseState();
                 break;
         }
 
         UpdateAnimator();
+        HandlePlayWalkingSound();
+    }
+
+    public bool IsSpawned()
+    {
+        return currentState != AIState.SpawnWait;
+    }
+
+    private void HandlePlayWalkingSound()
+    {
+        if (audioSource == null) return;
+        bool isMoving = agent.velocity.magnitude > 0.1f && !agent.isStopped;
+        if (isMoving && !audioSource.isPlaying)
+        {
+            audioSource.Play();
+        }
+        else if (!isMoving && audioSource.isPlaying)
+        {
+            audioSource.Stop();
+        }
     }
 
     private void HandleIdleState()
@@ -91,7 +141,6 @@ public class VampireAnimationController : MonoBehaviour
 
     private void HandlePatrolState()
     {
-        // 1. Vérifie si le chemin est valide et si l'agent est arrivé
         if (!agent.pathPending)
         {
             if (agent.remainingDistance <= agent.stoppingDistance || agent.pathStatus == NavMeshPathStatus.PathInvalid)
@@ -101,19 +150,24 @@ public class VampireAnimationController : MonoBehaviour
             }
         }
 
-        // 2. Sécurité Anti-Blocage : Si l'ennemi ne bouge quasiment pas pendant 5 secondes en patrouille, on relance
-        if (agent.velocity.sqrMagnitude < 0.01f)
+        CheckIfStuck();
+    }
+
+    private void HandleInvestigateState()
+    {
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
         {
-            stuckCheckTimer += Time.deltaTime;
-            if (stuckCheckTimer >= 5.0f)
+            waitTimer -= Time.deltaTime;
+            agent.isStopped = true;
+
+            if (waitTimer <= 0f)
             {
-                stuckCheckTimer = 0f;
                 GoToNextPatrolPoint();
             }
         }
         else
         {
-            stuckCheckTimer = 0f;
+            CheckIfStuck();
         }
     }
 
@@ -121,8 +175,41 @@ public class VampireAnimationController : MonoBehaviour
     {
         if (playerTransform != null)
         {
-            agent.SetDestination(playerTransform.position);
+            float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+            bool canSeePlayerNow = CanSeePlayerDirectly(distToPlayer);
+
+            if (canSeePlayerNow)
+            {
+                lastKnownPlayerPosition = playerTransform.position;
+                currentLoseSightTimer = 0f;
+                agent.SetDestination(lastKnownPlayerPosition);
+            }
+            else
+            {
+                currentLoseSightTimer += Time.deltaTime;
+                agent.SetDestination(lastKnownPlayerPosition);
+
+                if (currentLoseSightTimer >= loseSightTimerMax)
+                {
+                    StartInvestigating(lastKnownPlayerPosition);
+                }
+            }
         }
+    }
+
+    private bool CanSeePlayerDirectly(float distToPlayer)
+    {
+        if (distToPlayer > viewRadius) return false;
+
+        Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
+        if (Vector3.Angle(transform.forward, dirToPlayer) < viewAngle / 2f)
+        {
+            if (!Physics.Raycast(transform.position + Vector3.up, dirToPlayer, distToPlayer, obstacleMask))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void EnterIdleState()
@@ -145,9 +232,38 @@ public class VampireAnimationController : MonoBehaviour
         }
         else
         {
-            // S'il n'a pas réussi à trouver un point, il attend 1 seconde et réessaie
             EnterIdleState();
             waitTimer = 1.0f;
+        }
+    }
+
+    private void StartInvestigating(Vector3 targetPos)
+    {
+        currentState = AIState.Investigate;
+        agent.isStopped = false;
+        agent.speed = investigateSpeed;
+        agent.SetDestination(targetPos);
+        waitTimer = Random.Range(3f, 5f);
+        stuckCheckTimer = 0f;
+    }
+
+    private void CheckIfStuck()
+    {
+        if (agent.velocity.sqrMagnitude < 0.01f)
+        {
+            stuckCheckTimer += Time.deltaTime;
+            if (stuckCheckTimer >= 4.0f)
+            {
+                stuckCheckTimer = 0f;
+                if (currentState == AIState.Patrol)
+                    GoToNextPatrolPoint();
+                else if (currentState == AIState.Investigate)
+                    EnterIdleState();
+            }
+        }
+        else
+        {
+            stuckCheckTimer = 0f;
         }
     }
 
@@ -155,20 +271,13 @@ public class VampireAnimationController : MonoBehaviour
 
     private void LookForPlayer()
     {
-        if (playerTransform == null) return;
+        // Empêche la détection pendant l'attente de spawn
+        if (playerTransform == null || currentState == AIState.Chase || currentState == AIState.SpawnWait) return;
 
-        Vector3 dirToPlayer = (playerTransform.position - transform.position).normalized;
         float dstToPlayer = Vector3.Distance(transform.position, playerTransform.position);
-
-        if (dstToPlayer <= viewRadius)
+        if (CanSeePlayerDirectly(dstToPlayer))
         {
-            if (Vector3.Angle(transform.forward, dirToPlayer) < viewAngle / 2f)
-            {
-                if (!Physics.Raycast(transform.position + Vector3.up, dirToPlayer, dstToPlayer, obstacleMask))
-                {
-                    StartChasing();
-                }
-            }
+            StartChasing();
         }
     }
 
@@ -178,7 +287,8 @@ public class VampireAnimationController : MonoBehaviour
 
     public void ReceiveNoise(Vector3 noiseSourcePosition, float noiseIntensity)
     {
-        if (currentState == AIState.Chase) return;
+        // Ignore les bruits pendant l'attente de spawn ou s'il chasse déjà
+        if (currentState == AIState.Chase || currentState == AIState.SpawnWait) return;
 
         float distance = Vector3.Distance(transform.position, noiseSourcePosition);
 
@@ -188,19 +298,20 @@ public class VampireAnimationController : MonoBehaviour
 
             if (perceivedNoise >= noiseThreshold && agent.isOnNavMesh)
             {
-                currentState = AIState.Patrol;
-                agent.isStopped = false;
-                agent.speed = walkSpeed;
-                agent.SetDestination(noiseSourcePosition);
+                StartInvestigating(noiseSourcePosition);
             }
         }
     }
 
     public void TriggerGlobalDetection(Vector3 targetPosition)
     {
+        // Ignore la détection globale s'il est encore en phase de spawn
+        if (currentState == AIState.SpawnWait) return;
+
         StartChasing();
         if (agent.isOnNavMesh)
         {
+            lastKnownPlayerPosition = targetPosition;
             agent.SetDestination(targetPosition);
         }
     }
@@ -211,25 +322,26 @@ public class VampireAnimationController : MonoBehaviour
 
     public void StartChasing()
     {
+        if (currentState == AIState.SpawnWait) return;
+
         currentState = AIState.Chase;
+        currentLoseSightTimer = 0f;
         if (agent != null && agent.isOnNavMesh)
         {
             agent.isStopped = false;
             agent.speed = chaseSpeed;
+            if (playerTransform != null)
+            {
+                lastKnownPlayerPosition = playerTransform.position;
+            }
         }
-    }
-
-    public void StopChasing()
-    {
-        GoToNextPatrolPoint();
     }
 
     private bool SetNewRandomDestination()
     {
         if (!agent.isOnNavMesh) return false;
 
-        // Cherche un point éloigné
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 30; i++)
         {
             Vector3 randomDirection = Random.insideUnitSphere * maxPatrolDistance;
 
@@ -242,14 +354,16 @@ public class VampireAnimationController : MonoBehaviour
 
             if (NavMesh.SamplePosition(randomDirection, out NavMeshHit hit, maxPatrolDistance, NavMesh.AllAreas))
             {
-                agent.SetDestination(hit.position);
-                return true;
+                NavMeshPath path = new NavMeshPath();
+                if (agent.CalculatePath(hit.position, path) && path.status == NavMeshPathStatus.PathComplete)
+                {
+                    agent.SetDestination(hit.position);
+                    return true;
+                }
             }
         }
 
-        // Fallback
-        Vector3 fallbackDirection = Random.insideUnitSphere * maxPatrolDistance + transform.position;
-        if (NavMesh.SamplePosition(fallbackDirection, out NavMeshHit hitFallback, maxPatrolDistance, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(transform.position + Random.insideUnitSphere * minPatrolDistance, out NavMeshHit hitFallback, minPatrolDistance, NavMesh.AllAreas))
         {
             agent.SetDestination(hitFallback.position);
             return true;

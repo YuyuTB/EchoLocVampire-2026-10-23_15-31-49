@@ -11,6 +11,9 @@ public class PlayerNoiseEmitter : MonoBehaviour
     // Détermine le bruit selon l'état du joueur
     public void EmitMovementNoise(bool isSneaking, bool isSprinting, bool isJumping)
     {
+        // Ignore les bruits de mouvement si aucun vampire n'a fini de spawner
+        if (!AreAnyVampiresActive()) return;
+
         float noiseValue = 0f;
 
         if (isJumping)
@@ -36,6 +39,13 @@ public class PlayerNoiseEmitter : MonoBehaviour
     // Appelée lorsque le joueur tape avec sa canne
     public void UseCane()
     {
+        // Si aucun vampire n'a fini de spawner, la canne fait du bruit normalement mais pas de spam global
+        if (!AreAnyVampiresActive())
+        {
+            SendNoiseToEnemies(5.0f);
+            return;
+        }
+
         float noiseValue = 5.0f;
 
         // Si réutilisé dans la fenêtre de 2 secondes
@@ -65,7 +75,6 @@ public class PlayerNoiseEmitter : MonoBehaviour
 
     private void SendNoiseToEnemies(float noiseAmount)
     {
-        // Recherche tous les ennemis avec le tag "Enemy"
         GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
         foreach (GameObject enemy in enemies)
         {
@@ -88,5 +97,31 @@ public class PlayerNoiseEmitter : MonoBehaviour
                 vampire.TriggerGlobalDetection(transform.position);
             }
         }
+    }
+
+    // Vérifie s'il y a au moins un vampire actif (qui a fini son attente de spawn)
+    private bool AreAnyVampiresActive()
+    {
+        GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+        if (enemies.Length == 0) return false;
+
+        foreach (GameObject enemy in enemies)
+        {
+            var vampire = enemy.GetComponent<VampireAnimationController>();
+            if (vampire != null)
+            {
+                // On s'assure de pouvoir lire l'état ou on vérifie si le vampire n'est plus en SpawnWait.
+                // Pour que cela fonctionne, rendez l'énumérateur ou une méthode publique dans VampireAnimationController, 
+                // ou vérifiez simplement si le script du vampire a une méthode/propriété pour ça.
+
+                // Astuce : Comme l'état est privé, on peut ajouter une simple méthode publique 
+                // "public bool IsSpawned() { return currentState != AIState.SpawnWait; }" dans le script du vampire.
+                if (vampire.IsSpawned())
+                {
+                    return true; // Dès qu'un vampire est réveillé, le système s'active
+                }
+            }
+        }
+        return false;
     }
 }

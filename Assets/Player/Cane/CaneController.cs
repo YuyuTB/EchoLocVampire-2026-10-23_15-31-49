@@ -76,6 +76,8 @@ public class CaneController : MonoBehaviour
 
     private void ExecuteCaneTap()
     {
+        PlayerController player = transform.GetComponentInParent<PlayerController>();
+        if (player != null && player.isInCutscene) return;
         AnimateTap();
         // Start raycast directly from the Cane GameObject position
         Vector3 rayOrigin = transform.position;
@@ -105,6 +107,7 @@ public class CaneController : MonoBehaviour
 
     private void AnimateTap()
     {
+        
         if (HandAndCane != null)
         {
             if (tapCoroutine != null)

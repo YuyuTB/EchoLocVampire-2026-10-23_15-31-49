@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,24 +11,23 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float speed = 5f;
     [SerializeField] private float sprintSpeedMultiplier = 2f;
-    [SerializeField] private float jumpSpeed = 5f;
     [SerializeField] private float lookSensitivity = 0.1f;
     [SerializeField] private float crouchSpeedMultiplier = 0.5f;
     [SerializeField] private float crouchHeight = 1f;
     [SerializeField] private float crouchSwitchSpeed = 35f;
-    [SerializeField] private float crouchJumpMultiplier = 0.5f;
 
     [Header("Interaction Settings")]
     [SerializeField] private float interactionDistance = 3f;
     public bool hasExitKey = false;
+    public bool isInCutscene = false;
 
     [Header("Component Declarations")]
     private CharacterController _controller;
     private GameObject _camera;
+    private AudioSource _audioSource;
 
     [Header("Input Action Declarations")]
     private InputAction _moveAction;
-    private InputAction _jumpAction;
     private InputAction _lookAction;
     private InputAction _sprintAction;
     private InputAction _crouchAction;
@@ -65,12 +65,32 @@ public class PlayerController : MonoBehaviour
         // Lock the cursor to the center of the screen and hide it
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        // Bloque le joueur et désactive ses inputs pendant 1 seconde
+        StartCoroutine(InitializationDelayRoutine());
+    }
+
+    private IEnumerator InitializationDelayRoutine()
+    {
+        isInCutscene = true;
+
+        // Désactive l'Action Map pour empêcher tout clic de menu de se propager dans le jeu
+        InputActions.FindActionMap("Player").Disable();
+
+        // Attend 0.5 seconde
+        yield return new WaitForSeconds(0.5f);
+
+        // Réactive les inputs et libère le joueur
+        InputActions.FindActionMap("Player").Enable();
+        isInCutscene = false;
     }
 
     private void Update()
     {
+        StopMoveSoundInCutscene();
         // Inputs, mouse look, and instant triggers (like interaction) 
         // run in Update for perfect responsiveness.
+        if (isInCutscene) return;
         HandleInput();
         HandleInteract();
         HandleLookVertical();
@@ -80,11 +100,20 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (isInCutscene) return;
         // Physics, movement, and crouching stay in FixedUpdate
         HandleCrouch();
         HandleMoveSpeed();
         HandleMove();
-        HandleJumpAndGravity();
+        HandleGravity();
+    }
+
+    private void StopMoveSoundInCutscene()
+    {
+        if (isInCutscene && _audioSource.isPlaying)
+        {
+            _audioSource.Stop();
+        }
     }
 
     private void InitializeComponents()
@@ -92,18 +121,55 @@ public class PlayerController : MonoBehaviour
         _controller = GetComponent<CharacterController>();
         _camera = GameObject.FindGameObjectWithTag("MainCamera");
         _standingHeight = _controller.height;
+        _audioSource = GetComponent<AudioSource>();
     }
 
     private void InitializeInputActions()
     {
         _moveAction = InputSystem.actions.FindAction("Move");
-        _jumpAction = InputSystem.actions.FindAction("Jump");
         _lookAction = InputSystem.actions.FindAction("Look");
         _sprintAction = InputSystem.actions.FindAction("Sprint");
         _crouchAction = InputSystem.actions.FindAction("Crouch");
         _attackAction = InputSystem.actions.FindAction("Attack");
-        _menuAction = InputSystem.actions.FindAction("Menu");
         _interactAction = InputSystem.actions.FindAction("Interact");
+        _menuAction = InputSystem.actions.FindAction("Menu");
+    }
+
+    private void HandlePlayFootstepSound()
+    {
+        if (_sprintAction.IsPressed() && _moveAmount.magnitude > 0.1f)
+        {
+            // Accelerate the pitch for sprinting footsteps
+            _audioSource.pitch = sprintSpeedMultiplier;
+            _audioSource.volume = 0.75f;
+        }
+        else if (_crouchAction.IsPressed() && _moveAmount.magnitude > 0.1f)
+        {
+            // Lower the pitch for crouching footsteps
+            _audioSource.pitch = crouchSpeedMultiplier;
+            _audioSource.volume = 0.25f;
+        }
+        else
+        {
+            // Normal pitch for regular walking
+            _audioSource.pitch = 1f;
+            _audioSource.volume = 0.5f;
+        }
+
+        if (_moveAmount.magnitude > 0.1f)
+        {
+            if (!_audioSource.isPlaying)
+            {
+                _audioSource.Play();
+            }
+        }
+        else
+        {
+            if (_audioSource.isPlaying)
+            {
+                _audioSource.Stop();
+            }
+        }
     }
 
     private void HandleInteract()
@@ -186,6 +252,7 @@ public class PlayerController : MonoBehaviour
         Vector3 finalMove = (moveDirection * _moveSpeed) + new Vector3(0, _verticalVelocity, 0);
 
         _controller.Move(finalMove * Time.fixedDeltaTime);
+        HandlePlayFootstepSound();
     }
 
     private void HandleLookVertical()
@@ -204,21 +271,13 @@ public class PlayerController : MonoBehaviour
         transform.Rotate(Vector3.up * lookX);
     }
 
-    /********************************************************
-     * JUMP & GRAVITY
-     ********************************************************/
-    private void HandleJumpAndGravity()
+    private void HandleGravity()
     {
         if (_controller.isGrounded)
         {
             if (_verticalVelocity < 0.0f)
             {
                 _verticalVelocity = -2f;
-            }
-
-            if (_jumpAction.WasPressedThisFrame())
-            {
-                _verticalVelocity = jumpSpeed * (_crouchAction.IsPressed() ? crouchJumpMultiplier : 1f);
             }
         }
         else

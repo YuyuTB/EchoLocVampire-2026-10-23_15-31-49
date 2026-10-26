@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/MainMenu.uss?fileID=7433441132597879392&amp;guid=1c514ec45eed035489a75b4588456c81&amp;type=3#MainMenu"/>
+    <ui:VisualElement class="root-container">
+        <ui:VisualElement name="MainPanel" class="panel">
+            <ui:Label text="ECHOLOCESCAPIST" class="game-title"/>
+            <ui:Label text="Escape the vampire in complete darkness" class="game-subtitle"/>
+            <ui:VisualElement class="button-container">
+                <ui:Button name="PlayButton" text="PLAY" class="menu-button"/>
+                <ui:Button name="QuitButton" text="QUIT" class="menu-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="ControlsPanel" class="panel">
+            <ui:Label text="HOW TO PLAY" class="game-title"/>
+            <ui:Label text="[LEFT CLICK] : Tap your cane to echolocate.&#10;[W, A, S, D] : Move.&#10;[LShift] : Run.&#10;[LCtrl] : Crouch.&#10;&#10;WARNING: Any of your action makes you more or less detectable by potential threats." class="controls-text"/>
+            <ui:VisualElement class="button-container">
+                <ui:Button name="StartGameButton" text="START GAME" class="menu-button"/>
+                <ui:Button name="BackButton" text="BACK" class="menu-button secondary-button"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
