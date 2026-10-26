@@ -13,7 +13,7 @@ public class VampireAnimationController : MonoBehaviour
     private AudioSource audioSource;
 
     [Header("Paramètres de Spawn")]
-    [SerializeField] private float spawnWaitTime = 5f; // Durée de l'attente au spawn
+    [SerializeField] private float spawnWaitTime = 5f;
     private float spawnTimer = 0f;
 
     [Header("Champs de Détection Visuelle")]
@@ -39,8 +39,13 @@ public class VampireAnimationController : MonoBehaviour
 
     [Header("Paramètres de Chasse & Perte de Vue")]
     [SerializeField] private float loseSightTimerMax = 3.0f;
+    [SerializeField] private float catchDistance = 1.8f;
     private float currentLoseSightTimer = 0f;
     private Vector3 lastKnownPlayerPosition;
+
+    [Header("Game Over")]
+    [SerializeField] private GameObject gameOverUIPrefab;
+    private bool isGameOver = false;
 
     // État actuel
     private AIState currentState = AIState.SpawnWait;
@@ -64,7 +69,6 @@ public class VampireAnimationController : MonoBehaviour
 
         if (agent != null && agent.enabled && agent.isOnNavMesh)
         {
-            // S'assure qu'il est bien arrêté pendant le délai de spawn
             agent.isStopped = true;
             agent.velocity = Vector3.zero;
             spawnTimer = spawnWaitTime;
@@ -74,9 +78,8 @@ public class VampireAnimationController : MonoBehaviour
 
     private void Update()
     {
-        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
+        if (isGameOver || agent == null || !agent.enabled || !agent.isOnNavMesh) return;
 
-        // Gestion de l'état d'attente au spawn (ne fait rien d'autre pendant 5 secondes)
         if (currentState == AIState.SpawnWait)
         {
             spawnTimer -= Time.deltaTime;
@@ -149,7 +152,6 @@ public class VampireAnimationController : MonoBehaviour
                 return;
             }
         }
-
         CheckIfStuck();
     }
 
@@ -176,6 +178,13 @@ public class VampireAnimationController : MonoBehaviour
         if (playerTransform != null)
         {
             float distToPlayer = Vector3.Distance(transform.position, playerTransform.position);
+
+            if (distToPlayer <= catchDistance)
+            {
+                TriggerGameOver();
+                return;
+            }
+
             bool canSeePlayerNow = CanSeePlayerDirectly(distToPlayer);
 
             if (canSeePlayerNow)
@@ -195,6 +204,44 @@ public class VampireAnimationController : MonoBehaviour
                 }
             }
         }
+    }
+
+    private void TriggerGameOver()
+    {
+        if (isGameOver) return;
+        isGameOver = true;
+
+        // Désactiver le contrôle et déverrouiller la souris via le script du joueur
+        if (playerTransform != null)
+        {
+            PlayerController playerController = playerTransform.GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                playerController.isGameOver = true;
+            }
+        }
+
+        // Stopper le mouvement du NavMeshAgent
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.isStopped = true;
+            agent.velocity = Vector3.zero;
+        }
+
+        // Couper net le bruit de déplacement du vampire
+        if (audioSource != null)
+        {
+            audioSource.Stop();
+        }
+
+        // Instancier l'UI de Game Over
+        if (gameOverUIPrefab != null)
+        {
+            Instantiate(gameOverUIPrefab);
+        }
+
+        // Figer le temps du jeu
+        Time.timeScale = 0f;
     }
 
     private bool CanSeePlayerDirectly(float distToPlayer)
@@ -271,7 +318,6 @@ public class VampireAnimationController : MonoBehaviour
 
     private void LookForPlayer()
     {
-        // Empêche la détection pendant l'attente de spawn
         if (playerTransform == null || currentState == AIState.Chase || currentState == AIState.SpawnWait) return;
 
         float dstToPlayer = Vector3.Distance(transform.position, playerTransform.position);
@@ -287,7 +333,6 @@ public class VampireAnimationController : MonoBehaviour
 
     public void ReceiveNoise(Vector3 noiseSourcePosition, float noiseIntensity)
     {
-        // Ignore les bruits pendant l'attente de spawn ou s'il chasse déjà
         if (currentState == AIState.Chase || currentState == AIState.SpawnWait) return;
 
         float distance = Vector3.Distance(transform.position, noiseSourcePosition);
@@ -305,7 +350,6 @@ public class VampireAnimationController : MonoBehaviour
 
     public void TriggerGlobalDetection(Vector3 targetPosition)
     {
-        // Ignore la détection globale s'il est encore en phase de spawn
         if (currentState == AIState.SpawnWait) return;
 
         StartChasing();

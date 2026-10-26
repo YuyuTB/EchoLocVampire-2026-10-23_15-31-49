@@ -20,6 +20,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float interactionDistance = 3f;
     public bool hasExitKey = false;
     public bool isInCutscene = false;
+    public bool isGameOver = false; // Sécurité pour empêcher le joueur de recapturer la souris en Game Over
 
     [Header("Component Declarations")]
     private CharacterController _controller;
@@ -74,23 +75,19 @@ public class PlayerController : MonoBehaviour
     {
         isInCutscene = true;
 
-        // Désactive l'Action Map pour empêcher tout clic de menu de se propager dans le jeu
         InputActions.FindActionMap("Player").Disable();
-
-        // Attend 0.5 seconde
         yield return new WaitForSeconds(0.5f);
-
-        // Réactive les inputs et libère le joueur
         InputActions.FindActionMap("Player").Enable();
         isInCutscene = false;
     }
 
     private void Update()
     {
+        if (isGameOver) return; // Stoppe le contrôle si c'est Game Over
+
         StopMoveSoundInCutscene();
-        // Inputs, mouse look, and instant triggers (like interaction) 
-        // run in Update for perfect responsiveness.
         if (isInCutscene) return;
+
         HandleInput();
         HandleInteract();
         HandleLookVertical();
@@ -100,8 +97,8 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isInCutscene) return;
-        // Physics, movement, and crouching stay in FixedUpdate
+        if (isGameOver || isInCutscene) return;
+
         HandleCrouch();
         HandleMoveSpeed();
         HandleMove();
@@ -139,19 +136,16 @@ public class PlayerController : MonoBehaviour
     {
         if (_sprintAction.IsPressed() && _moveAmount.magnitude > 0.1f)
         {
-            // Accelerate the pitch for sprinting footsteps
             _audioSource.pitch = sprintSpeedMultiplier;
             _audioSource.volume = 0.75f;
         }
         else if (_crouchAction.IsPressed() && _moveAmount.magnitude > 0.1f)
         {
-            // Lower the pitch for crouching footsteps
             _audioSource.pitch = crouchSpeedMultiplier;
             _audioSource.volume = 0.25f;
         }
         else
         {
-            // Normal pitch for regular walking
             _audioSource.pitch = 1f;
             _audioSource.volume = 0.5f;
         }
@@ -179,7 +173,6 @@ public class PlayerController : MonoBehaviour
             RaycastHit hit;
             if (Physics.Raycast(_camera.transform.position, _camera.transform.forward, out hit, interactionDistance))
             {
-                // Modular approach: Check if the hit object implements IInteractable
                 IInteractable interactable = hit.collider.GetComponent<IInteractable>();
                 if (interactable != null)
                 {
@@ -197,6 +190,8 @@ public class PlayerController : MonoBehaviour
 
     private void HandleCursorDisplay()
     {
+        if (isGameOver) return; // Empêche de reverrouiller la souris si on clique sur l'UI
+
         if (_attackAction.WasPressedThisFrame())
         {
             Cursor.lockState = CursorLockMode.Locked;

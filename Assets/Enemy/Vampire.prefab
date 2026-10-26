@@ -386,6 +386,8 @@ MonoBehaviour:
   investigateSpeed: 2.5
   chaseSpeed: 4.5
   loseSightTimerMax: 3
+  catchDistance: 1.8
+  gameOverUIPrefab: {fileID: 8503486691338211625, guid: 539a5c3bc35f44a488fd94a4163df841, type: 3}
 --- !u!195 &5091971948319925784
 NavMeshAgent:
   m_ObjectHideFlags: 0
