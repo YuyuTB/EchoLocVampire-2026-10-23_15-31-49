@@ -44,11 +44,7 @@ public class DoorController : MonoBehaviour, IInteractable
         if (canBeUnlocked)
         {
             isLocked = false;
-            Debug.Log("La porte a été déverrouillée.");
-        }
-        else
-        {
-            Debug.Log("La porte ne peut pas être déverrouillée.");
+            OpenDoor();
         }
     }
 

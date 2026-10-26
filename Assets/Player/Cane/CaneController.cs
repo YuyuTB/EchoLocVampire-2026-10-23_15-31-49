@@ -20,6 +20,7 @@ public class CaneController : MonoBehaviour
     private static readonly int ImpactTimeID = Shader.PropertyToID("_ImpactTime");
 
     [SerializeField] private GameObject HandAndCane;
+    private AudioSource _audioSource;
     private Vector3 initialLocalPosition;
     private Coroutine tapCoroutine;
 
@@ -36,6 +37,7 @@ public class CaneController : MonoBehaviour
     private void OnEnable()
     {
         RegisterInputEvents();
+        _audioSource = GetComponent<AudioSource>();
     }
 
     private void OnDisable()
@@ -85,6 +87,12 @@ public class CaneController : MonoBehaviour
         if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, raycastDistance, groundLayerMask))
         {
             Vector3 impactPoint = hit.point;
+
+            // Play can tap sound effect on hit point
+            if (_audioSource != null)
+            {
+                _audioSource.Play();
+            }
 
             // Broadcast global parameters to all Shader Graph materials
             Shader.SetGlobalVector(ImpactPositionID, new Vector4(impactPoint.x, impactPoint.y, impactPoint.z, 0.0f));

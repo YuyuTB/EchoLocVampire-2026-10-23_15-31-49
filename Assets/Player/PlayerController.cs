@@ -137,17 +137,17 @@ public class PlayerController : MonoBehaviour
         if (_sprintAction.IsPressed() && _moveAmount.magnitude > 0.1f)
         {
             _audioSource.pitch = sprintSpeedMultiplier;
-            _audioSource.volume = 0.75f;
+            _audioSource.volume = 0.5f;
         }
         else if (_crouchAction.IsPressed() && _moveAmount.magnitude > 0.1f)
         {
             _audioSource.pitch = crouchSpeedMultiplier;
-            _audioSource.volume = 0.25f;
+            _audioSource.volume = 0.15f;
         }
         else
         {
             _audioSource.pitch = 1f;
-            _audioSource.volume = 0.5f;
+            _audioSource.volume = 0.3f;
         }
 
         if (_moveAmount.magnitude > 0.1f)
