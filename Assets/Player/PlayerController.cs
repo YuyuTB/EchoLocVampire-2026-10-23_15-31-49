@@ -26,6 +26,7 @@ public class PlayerController : MonoBehaviour
     private CharacterController _controller;
     private GameObject _camera;
     private AudioSource _audioSource;
+    
 
     [Header("Input Action Declarations")]
     private InputAction _moveAction;

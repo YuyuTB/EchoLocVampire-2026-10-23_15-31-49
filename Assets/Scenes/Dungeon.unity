@@ -37232,6 +37232,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 8762140011452256760, guid: 353364443b7d2d845803c0bd05a901a1, type: 3}
+      propertyPath: _unlockCanvas
+      value: 
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

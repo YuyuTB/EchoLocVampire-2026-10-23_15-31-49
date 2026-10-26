@@ -234,6 +234,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 304dc8bab86647841a6e40e0cc8cf877, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DoorController
+  unlockUIPrefab: {fileID: 5014936879615376136, guid: 915b4fab48dfb944ab165d1caa1878ff, type: 3}
   isLocked: 0
   canBeUnlocked: 0
 --- !u!4 &2167107808965772445 stripped

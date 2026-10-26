@@ -3,10 +3,15 @@ using UnityEngine;
 
 public class DoorController : MonoBehaviour, IInteractable
 {
+    [Header("UI de Message (Prefab)")]
+    [SerializeField] private GameObject unlockUIPrefab; // Glisse ton Prefab de Canvas de message ici dans l'inspecteur
+
     public bool isLocked = false;
     public bool canBeUnlocked = false;
 
     private bool _isOpen = false;
+    private GameObject _currentUnlockCanvasInstance;
+    private Coroutine _currentUnlockCoroutine;
 
     private void Start()
     {
@@ -25,13 +30,13 @@ public class DoorController : MonoBehaviour, IInteractable
         {
             UnlockDoor();
         }
-        else if (isLocked && !player.hasExitKey)
-        {
-            Debug.Log("La porte est verrouillée. Vous avez besoin d'une clé pour l'ouvrir.");
-        }
         else if (isLocked && !canBeUnlocked)
         {
-            Debug.Log("La porte est verrouillée et ne peut pas être déverrouillée.");
+            ShowUnlockMessage("That door is locked. You cannot open it at the moment.");
+        }
+        else if (isLocked && !player.hasExitKey)
+        {
+            ShowUnlockMessage("That door is locked. You need a key to open it.");
         }
         else
         {
@@ -46,6 +51,55 @@ public class DoorController : MonoBehaviour, IInteractable
             isLocked = false;
             OpenDoor();
         }
+    }
+
+    private void ShowUnlockMessage(string message)
+    {
+        // Si un message est déjà affiché, on le nettoie proprement avant d'afficher le nouveau
+        if (_currentUnlockCoroutine != null)
+        {
+            StopCoroutine(_currentUnlockCoroutine);
+            if (_currentUnlockCanvasInstance != null)
+            {
+                Destroy(_currentUnlockCanvasInstance);
+            }
+        }
+
+        _currentUnlockCoroutine = StartCoroutine(ShowUnlockMessageCoroutine(message));
+    }
+
+    private IEnumerator ShowUnlockMessageCoroutine(string message)
+    {
+        // 1. Instancier le Prefab du Canvas à l'écran
+        if (unlockUIPrefab != null)
+        {
+            _currentUnlockCanvasInstance = Instantiate(unlockUIPrefab);
+
+            // 2. Mettre à jour le texte (compatible Text classique ou TextMeshPro)
+            var textComponent = _currentUnlockCanvasInstance.GetComponentInChildren<UnityEngine.UI.Text>();
+            if (textComponent != null)
+            {
+                textComponent.text = message;
+            }
+            else
+            {
+                var tmpComponent = _currentUnlockCanvasInstance.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                if (tmpComponent != null)
+                {
+                    tmpComponent.text = message;
+                }
+            }
+        }
+
+        // 3. Attendre 2 secondes en temps réel
+        yield return new WaitForSecondsRealtime(2f);
+
+        // 4. Détruire (dé-pop) l'instance du Canvas
+        if (_currentUnlockCanvasInstance != null)
+        {
+            Destroy(_currentUnlockCanvasInstance);
+        }
+        _currentUnlockCoroutine = null;
     }
 
     public void StartMoveUp()
@@ -80,14 +134,6 @@ public class DoorController : MonoBehaviour, IInteractable
             // Slide the door upwards progressively over 1 second
             StartMoveUp();
             _isOpen = true;
-        }
-        else if (isLocked)
-        {
-            Debug.Log("La porte est verrouillée.");
-        }
-        else if (_isOpen)
-        {
-            Debug.Log("La porte est déjà ouverte.");
         }
     }
 }
