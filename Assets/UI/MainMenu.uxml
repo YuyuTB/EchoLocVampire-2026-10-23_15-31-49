@@ -6,12 +6,11 @@
             <ui:Label text="Escape the vampire in complete darkness" class="game-subtitle"/>
             <ui:VisualElement class="button-container">
                 <ui:Button name="PlayButton" text="PLAY" class="menu-button"/>
-                <ui:Button name="QuitButton" text="QUIT" class="menu-button"/>
             </ui:VisualElement>
         </ui:VisualElement>
         <ui:VisualElement name="ControlsPanel" class="panel">
             <ui:Label text="HOW TO PLAY" class="game-title"/>
-            <ui:Label text="[LEFT CLICK] : Tap your cane to echolocate.&#10;[W, A, S, D] : Move.&#10;[LShift] : Run.&#10;[LCtrl] : Crouch.&#10;&#10;WARNING: Any of your action makes you more or less detectable by potential threats." class="controls-text"/>
+            <ui:Label text="[LEFT CLICK] : Tap your cane to echolocate.&#10;[E] : Interact.&#10;[W, A, S, D] : Move.&#10;[LShift] : Run.&#10;[LCtrl] : Crouch.&#10;&#10;WARNING: Any of your action makes you more or less detectable by potential threats." class="controls-text"/>
             <ui:VisualElement class="button-container">
                 <ui:Button name="StartGameButton" text="START GAME" class="menu-button"/>
                 <ui:Button name="BackButton" text="BACK" class="menu-button secondary-button"/>

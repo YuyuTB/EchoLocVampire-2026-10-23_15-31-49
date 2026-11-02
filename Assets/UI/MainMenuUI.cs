@@ -40,7 +40,6 @@ public class MainMenuUI : MonoBehaviour
 
         // Boutons
         SetupButton("PlayButton", OnPlayClicked);
-        SetupButton("QuitButton", OnQuitClicked);
         SetupButton("StartGameButton", OnStartGameClicked);
         SetupButton("BackButton", OnBackClicked);
 
@@ -84,16 +83,6 @@ public class MainMenuUI : MonoBehaviour
         {
             Debug.LogError("Aucune scène de jeu n'est assignée dans l'inspecteur !");
         }
-    }
-
-    private void OnQuitClicked()
-    {
-        Debug.Log("Fermeture du jeu...");
-#if UNITY_EDITOR
-        UnityEditor.EditorApplication.isPlaying = false;
-#else
-        Application.Quit();
-#endif
     }
 
     private void ShowMainPanel()
